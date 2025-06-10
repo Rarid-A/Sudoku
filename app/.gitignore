@@ -1,0 +1,8 @@
+# Ignore everything in this directory
+*
+
+# But not these files/directories
+!.gitignore
+!src/
+!src/main/
+!src/main/**

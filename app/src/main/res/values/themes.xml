@@ -1,0 +1,27 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Theme.Sudoku" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Primary brand color. -->
+        <item name="colorPrimary">@color/zen_primary</item>
+        <item name="colorPrimaryVariant">@color/zen_primary_dark</item>
+        <item name="colorOnPrimary">@color/zen_white</item>
+        <!-- Secondary brand color. -->
+        <item name="colorSecondary">@color/zen_accent</item>
+        <item name="colorSecondaryVariant">@color/zen_button</item>
+        <item name="colorOnSecondary">@color/zen_black</item>
+        <!-- Status bar color. -->
+        <item name="android:statusBarColor">@color/zen_primary_dark</item>
+        <!-- Customize your theme here. -->
+    </style>
+    <style name="GameTitleText">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">@dimen/text_size_large</item>
+        <item name="android:layout_gravity">center_horizontal</item>
+        <item name="android:layout_marginBottom">@dimen/margin_bottom_standard</item>
+        <item name="android:textColor">@color/zen_text</item>
+    </style>
+    <style name="ActivityStyle" parent="Theme.Sudoku">
+        <item name="android:windowBackground">@color/zen_bg</item>
+    </style>
+</resources>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="zen_bg">#F8F9FA</color>
+    <color name="zen_bg_dark">#121212</color>
+    <color name="zen_primary">#A7C7B7</color> <!-- Soft sage green -->
+    <color name="zen_primary_dark">#7BA292</color>
+    <color name="zen_accent">#BFD7EA</color> <!-- Soft blue -->
+    <color name="zen_button">#90A4AE</color> <!-- Muted blue-gray -->
+    <color name="zen_hint_unused">#FFE082</color> <!-- Soft gold -->
+    <color name="zen_hint_used">#B0BEC5</color> <!-- Muted gray-blue -->
+    <color name="zen_text">#333333</color>
+    <color name="zen_white">#FFFFFF</color>
+    <color name="zen_black">#000000</color>
+</resources>
