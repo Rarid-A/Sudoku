@@ -1,3 +1,11 @@
+# Ignore everything
+*
+
+# But not these files/directories
+!.gitignore
+!src/
+!src/main/
+!src/main/**
 *.iml
 .gradle
 /local.properties
