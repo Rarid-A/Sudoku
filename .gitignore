@@ -1,23 +1,20 @@
-# Ignore everything
+# Ignore everything by default
 *
 
 # But not these files/directories
 !.gitignore
-!src/
-!src/main/
-!src/main/**
+!app/
+!app/src/
+!app/src/main/
+!app/src/main/**
+
+# Ignore typical Android/IDE files
 *.iml
 .gradle
 /local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+/.idea/
+/.DS_Store
+/build/
+/captures/
+/.externalNativeBuild/
+/cxx/
