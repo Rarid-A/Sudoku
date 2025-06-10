@@ -186,6 +186,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
+        android:layout_marginBottom="12dp"
         android:minWidth="160dp"
         android:text="Pencilmark: OFF"
         android:textColor="#0D47A1"
