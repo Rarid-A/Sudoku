@@ -30,6 +30,8 @@ public class GameActivity extends AppCompatActivity {
     private int[][] solutionGrid = new int[9][9];
     private boolean puzzleCompleted = false;
 
+    private final boolean[] numberLocked = new boolean[10]; // 1-9, ignore index 0
+
     private int dpToPx(int dp) {
         return (int) (dp * getResources().getDisplayMetrics().density);
     }
@@ -141,6 +143,11 @@ public class GameActivity extends AppCompatActivity {
             final int num = i;
             numBtn.setOnClickListener(v -> {
                 boardView.setNumber(num);
+                SharedPreferences prefs = getSharedPreferences("sudoku_settings", MODE_PRIVATE);
+                boolean autoValidateEnabled = prefs.getBoolean("auto_validate_enabled", true);
+                if (autoValidateEnabled) {
+                    checkAndLockCompletedNumbers();
+                }
                 if (isPuzzleComplete())
                     showCompletionDialog();
             });
@@ -310,6 +317,42 @@ public class GameActivity extends AppCompatActivity {
         updateHintCircles();
         if (isPuzzleComplete()) {
             showCompletionDialog();
+        }
+    }
+
+    private void checkAndLockCompletedNumbers() {
+        int[][] userGrid = boardView.getGrid();
+        for (int num = 1; num <= 9; num++) {
+            if (numberLocked[num])
+                continue;
+            int count = 0;
+            boolean allCorrect = true;
+            for (int r = 0; r < 9; r++) {
+                for (int c = 0; c < 9; c++) {
+                    if (userGrid[r][c] == num) {
+                        count++;
+                        if (solutionGrid[r][c] != num) {
+                            allCorrect = false;
+                        }
+                    }
+                }
+            }
+            if (count == 9 && allCorrect) {
+                numberLocked[num] = true;
+                // Lock cells in boardView
+                for (int r = 0; r < 9; r++) {
+                    for (int c = 0; c < 9; c++) {
+                        if (userGrid[r][c] == num) {
+                            boardView.setCellAsClue(r, c);
+                        }
+                    }
+                }
+                // Disable number button
+                int resId = getResources().getIdentifier("num_" + num, "id", getPackageName());
+                Button numBtn = findViewById(resId);
+                if (numBtn != null)
+                    numBtn.setEnabled(false);
+            }
         }
     }
 

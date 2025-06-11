@@ -16,6 +16,7 @@ public class SettingsActivity extends AppCompatActivity {
     private TextView hintTextView;
     private Switch hintSwitch;
     private Button newGameButton;
+    private Switch autoValidateSwitch;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,14 +27,22 @@ public class SettingsActivity extends AppCompatActivity {
         newGameButton = findViewById(R.id.button_new_game);
         ImageView closeBtn = findViewById(R.id.iv_close_settings);
         hintTextView = findViewById(R.id.tv_hint_label);
+        autoValidateSwitch = findViewById(R.id.switch_autovalidate);
 
         // Load preferences
         SharedPreferences prefs = getSharedPreferences("sudoku_settings", MODE_PRIVATE);
         boolean hintsEnabled = prefs.getBoolean("hints_enabled", false);
         hintSwitch.setChecked(hintsEnabled);
 
+        boolean autoValidateEnabled = prefs.getBoolean("auto_validate_enabled", true);
+        autoValidateSwitch.setChecked(autoValidateEnabled);
+
         hintSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             prefs.edit().putBoolean("hints_enabled", isChecked).apply();
+        });
+
+        autoValidateSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            prefs.edit().putBoolean("auto_validate_enabled", isChecked).apply();
         });
 
         newGameButton.setOnClickListener(v -> {
