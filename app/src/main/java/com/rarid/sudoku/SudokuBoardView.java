@@ -196,12 +196,6 @@ public class SudokuBoardView extends View {
         return true;
     }
 
-    @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        int size = Math.min(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec));
-        setMeasuredDimension(size, size);
-    }
-
     // Set the initial grid and mark clues
     public void setGrid(int[][] grid) {
         this.sudokuGrid = new int[9][9];
