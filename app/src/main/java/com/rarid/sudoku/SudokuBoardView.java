@@ -68,24 +68,25 @@ public class SudokuBoardView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        // Convert 4dp to pixels
-        float marginDp = 4f;
-        float density = getResources().getDisplayMetrics().density;
-        int marginPx = (int) (marginDp * density);
-
-        // Adjust boardSize to fit within vertical margins
         int availableWidth = getWidth();
-        int availableHeight = getHeight() - 2 * marginPx;
-        int drawBoardSize = Math.min(availableWidth, availableHeight);
-        int left = (getWidth() - drawBoardSize) / 2;
-        int top = marginPx + (availableHeight - drawBoardSize) / 2;
+        int availableHeight = getHeight();
+
+        // Always use the width as the limiting factor
+        int drawBoardSize = availableWidth;
+        int left = 0;
+        int top = (availableHeight - drawBoardSize) / 2;
+        if (availableHeight < availableWidth) {
+            // In landscape, fit to height instead
+            drawBoardSize = availableHeight;
+            left = (availableWidth - drawBoardSize) / 2;
+            top = 0;
+        }
 
         float radius = drawBoardSize / 18f;
         RectF bgRect = new RectF(left, top, left + drawBoardSize, top + drawBoardSize);
         cellBgPaint.setColor(Color.WHITE);
         canvas.drawRoundRect(bgRect, radius, radius, cellBgPaint);
 
-        // Use drawBoardSize and recalculate cellSize for drawing
         float cell = drawBoardSize / 9f;
 
         // Draw cells and numbers
@@ -193,6 +194,12 @@ public class SudokuBoardView extends View {
             }
         }
         return true;
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        int size = Math.min(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec));
+        setMeasuredDimension(size, size);
     }
 
     // Set the initial grid and mark clues
@@ -373,5 +380,9 @@ public class SudokuBoardView extends View {
             isClue[row][col] = true;
             invalidate();
         }
+    }
+
+    public boolean isPencilmarkMode() {
+        return pencilmarkMode;
     }
 }

@@ -1,6 +1,7 @@
 package com.rarid.sudoku;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -183,6 +184,18 @@ public class ProgressManager {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    // Save global settings
+    public static void saveSettings(Context context, boolean hintsEnabled) {
+        SharedPreferences prefs = context.getSharedPreferences("sudoku_settings", Context.MODE_PRIVATE);
+        prefs.edit().putBoolean("hints_enabled", hintsEnabled).apply();
+    }
+
+    // Load global settings
+    public static boolean loadHintsEnabled(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences("sudoku_settings", Context.MODE_PRIVATE);
+        return prefs.getBoolean("hints_enabled", false);
     }
 
     public static class ProgressData {

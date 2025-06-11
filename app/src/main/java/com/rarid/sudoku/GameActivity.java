@@ -1,10 +1,11 @@
 package com.rarid.sudoku;
 
+import android.content.SharedPreferences;
+import android.app.Activity;
 import android.content.Intent;
+import androidx.annotation.Nullable;
 import android.os.Bundle;
-import android.util.DisplayMetrics;
 import android.view.View;
-import android.widget.GridLayout;
 import android.graphics.drawable.GradientDrawable;
 import androidx.appcompat.app.AppCompatActivity;
 import org.json.JSONArray;
@@ -12,14 +13,14 @@ import org.json.JSONObject;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import android.widget.Button;
-import android.widget.LinearLayout;
-import android.view.Gravity;
-import android.widget.ScrollView;
+import android.widget.ImageButton;
 import android.widget.Toast;
+import android.widget.TextView;
 
 import com.rarid.sudoku.generator.SudokuGenerator;
 
 public class GameActivity extends AppCompatActivity {
+    private static final int SETTINGS_REQUEST = 1001;
 
     private SudokuBoardView boardView;
     private String currentDifficulty;
@@ -45,10 +46,9 @@ public class GameActivity extends AppCompatActivity {
         hintCircles[1] = findViewById(R.id.hint_circle_2);
         hintCircles[2] = findViewById(R.id.hint_circle_3);
 
-        Button hintButton = findViewById(R.id.hint_button);
         Button deleteButton = findViewById(R.id.delete_button);
-        Button newGameButton = findViewById(R.id.new_game_button);
         Button pencilToggle = findViewById(R.id.pencil_toggle);
+        ImageButton settingsBtn = findViewById(R.id.settings_button);
 
         // --- Game Logic Loading (unchanged, same as yours) ---
         Intent intent = getIntent();
@@ -106,28 +106,20 @@ public class GameActivity extends AppCompatActivity {
 
         ensurePuzzleCopyExists(currentDifficulty);
 
-        // --- Button Listeners ---
-        hintButton.setOnClickListener(v -> giveHint());
+        // --- Set toolbar title to show current difficulty ---
+        String difficultyLabel = "Sudoku";
+        if (currentDifficulty != null) {
+            String cap = currentDifficulty.substring(0, 1).toUpperCase() + currentDifficulty.substring(1);
+            difficultyLabel = cap + " Sudoku";
+        }
+        TextView toolbarTitle = findViewById(R.id.game_toolbar_title);
+        toolbarTitle.setText(difficultyLabel);
 
+        // --- Button Listeners ---
         deleteButton.setOnClickListener(v -> {
             boardView.deleteSelected();
             if (isPuzzleComplete())
                 showCompletionDialog();
-        });
-
-        newGameButton.setOnClickListener(v -> {
-            new androidx.appcompat.app.AlertDialog.Builder(this)
-                    .setTitle("Start New Game?")
-                    .setMessage("Are you sure? Progress will be lost.")
-                    .setPositiveButton("Yes", (d, w) -> {
-                        Intent newIntent = new Intent(GameActivity.this, GameActivity.class);
-                        newIntent.putExtra("difficulty", currentDifficulty);
-                        newIntent.putExtra("newGame", true);
-                        finish();
-                        startActivity(newIntent);
-                    })
-                    .setNegativeButton("Cancel", null)
-                    .show();
         });
 
         pencilToggle.setOnClickListener(v -> {
@@ -136,11 +128,16 @@ public class GameActivity extends AppCompatActivity {
             pencilToggle.setText("Pencilmark: " + (isOn ? "ON" : "OFF"));
         });
 
-        // --- Number Pad Listeners ---
-        GridLayout numberPad = findViewById(R.id.number_pad);
+        settingsBtn.setOnClickListener(v -> {
+            Intent settingsIntent = new Intent(this, SettingsActivity.class);
+            settingsIntent.putExtra("difficulty", currentDifficulty);
+            startActivityForResult(settingsIntent, SETTINGS_REQUEST);
+        });
+
+        // --- Number Pad Listeners (updated for toolbar layout) ---
         for (int i = 1; i <= 9; i++) {
             int resId = getResources().getIdentifier("num_" + i, "id", getPackageName());
-            Button numBtn = numberPad.findViewById(resId);
+            Button numBtn = findViewById(resId);
             final int num = i;
             numBtn.setOnClickListener(v -> {
                 boardView.setNumber(num);
@@ -149,7 +146,47 @@ public class GameActivity extends AppCompatActivity {
             });
         }
 
+        // Hide hint button if hints are disabled
+        SharedPreferences prefs = getSharedPreferences("sudoku_settings", MODE_PRIVATE);
+        boolean hintsEnabled = prefs.getBoolean("hints_enabled", false);
+        Button hintButton = findViewById(R.id.hint_button);
+        hintButton.setVisibility(hintsEnabled ? View.VISIBLE : View.GONE);
+        hintButton.setEnabled(hintsEnabled);
+
+        View hintCirclesLayout = findViewById(R.id.hint_circles_layout);
+        hintCirclesLayout.setVisibility(hintsEnabled ? View.VISIBLE : View.GONE);
+
+        hintButton.setOnClickListener(v -> {
+            if (hintsEnabled) {
+                giveHint();
+            }
+        });
+
         updateHintCircles();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == SETTINGS_REQUEST) {
+            SharedPreferences prefs = getSharedPreferences("sudoku_settings", MODE_PRIVATE);
+            boolean hintsEnabled = prefs.getBoolean("hints_enabled", false);
+            Button hintButton = findViewById(R.id.hint_button);
+            hintButton.setVisibility(hintsEnabled ? View.VISIBLE : View.GONE);
+            hintButton.setEnabled(hintsEnabled); // Add this line
+
+            View hintCirclesLayout = findViewById(R.id.hint_circles_layout);
+            hintCirclesLayout.setVisibility(hintsEnabled ? View.VISIBLE : View.GONE);
+
+            // If user pressed "New Game" in settings, start a new game
+            if (resultCode == Activity.RESULT_OK) {
+                Intent newIntent = new Intent(GameActivity.this, GameActivity.class);
+                newIntent.putExtra("difficulty", currentDifficulty);
+                newIntent.putExtra("newGame", true);
+                finish();
+                startActivity(newIntent);
+            }
+        }
     }
 
     private int[][] loadPuzzleFromUserCopy(String difficulty) {
@@ -261,8 +298,13 @@ public class GameActivity extends AppCompatActivity {
             Toast.makeText(this, "No solution available!", Toast.LENGTH_SHORT).show();
             return;
         }
+
+        boolean prevPencilmarkMode = boardView.isPencilmarkMode(); // Use getter
+        boardView.setPencilmarkMode(false); // Always insert as normal number
         boardView.setNumber(correct);
         boardView.setCellAsClue(row, col);
+        boardView.setPencilmarkMode(prevPencilmarkMode); // Restore previous mode
+
         hintsLeft--;
         hintsUsed++;
         updateHintCircles();

@@ -27,5 +27,6 @@
         <activity android:name="com.rarid.sudoku.EasyActivity" />
         <activity android:name="com.rarid.sudoku.MediumActivity" />
         <activity android:name="com.rarid.sudoku.HardActivity" />
+        <activity android:name="com.rarid.sudoku.SettingsActivity" android:exported="false" />
     </application>
 </manifest>
