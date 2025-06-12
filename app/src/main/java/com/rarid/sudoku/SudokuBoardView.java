@@ -71,6 +71,10 @@ public class SudokuBoardView extends View {
         int availableWidth = getWidth();
         int availableHeight = getHeight();
 
+        // Margin between board border and cells (in pixels)
+        // Increased margin for better spacing between border and cells
+        float margin = boardSize / 14f; // ~7% of board size
+
         // Always use the width as the limiting factor
         int drawBoardSize = availableWidth;
         int left = 0;
@@ -82,18 +86,23 @@ public class SudokuBoardView extends View {
             top = 0;
         }
 
+        // Draw rounded white background (optional, can keep as is)
         float radius = drawBoardSize / 18f;
         RectF bgRect = new RectF(left, top, left + drawBoardSize, top + drawBoardSize);
         cellBgPaint.setColor(Color.WHITE);
         canvas.drawRoundRect(bgRect, radius, radius, cellBgPaint);
 
-        float cell = drawBoardSize / 9f;
+        // Adjust cell drawing area to be inside the margin
+        float cellAreaLeft = left + margin;
+        float cellAreaTop = top + margin;
+        float cellAreaSize = drawBoardSize - 2 * margin;
+        float cell = cellAreaSize / 9f;
 
         // Draw cells and numbers
         for (int r = 0; r < 9; r++) {
             for (int c = 0; c < 9; c++) {
-                float x = left + c * cell;
-                float y = top + r * cell;
+                float x = cellAreaLeft + c * cell;
+                float y = cellAreaTop + r * cell;
                 // Highlight selected cell
                 if (r == selectedRow && c == selectedCol) {
                     cellBgPaint.setColor(0xFFD0E8FF); // light blue
@@ -143,10 +152,10 @@ public class SudokuBoardView extends View {
         // Draw all thin (light gray) lines first
         for (int i = 0; i <= 9; i++) {
             if (i % 3 != 0) {
-                float x = left + i * cell;
-                canvas.drawLine(x, top, x, top + boardSize, thinLinePaint);
-                float y = top + i * cell;
-                canvas.drawLine(left, y, left + boardSize, y, thinLinePaint);
+                float x = cellAreaLeft + i * cell;
+                canvas.drawLine(x, cellAreaTop, x, cellAreaTop + cellAreaSize, thinLinePaint);
+                float y = cellAreaTop + i * cell;
+                canvas.drawLine(cellAreaLeft, y, cellAreaLeft + cellAreaSize, y, thinLinePaint);
             }
         }
         // Draw all thick (black) lines last, so they appear on top
@@ -155,19 +164,20 @@ public class SudokuBoardView extends View {
             if (i % 3 == 0) {
                 float x, y;
                 if (i == 0) {
-                    x = left + halfThick;
-                    y = top + halfThick;
+                    x = cellAreaLeft - halfThick; // Draw slightly outside for border
+                    y = cellAreaTop - halfThick; // Draw slightly outside for border
                 } else if (i == 9) {
-                    x = left + boardSize - halfThick;
-                    y = top + boardSize - halfThick;
+                    x = cellAreaLeft + cellAreaSize + halfThick; // Draw slightly outside for border
+                    y = cellAreaTop + cellAreaSize + halfThick; // Draw slightly outside for border
                 } else {
-                    x = left + i * cell;
-                    y = top + i * cell;
+                    x = cellAreaLeft + i * cell;
+                    y = cellAreaTop + i * cell;
                 }
-                // Vertical
-                canvas.drawLine(x, top + halfThick, x, top + boardSize - halfThick, thickLinePaint);
-                // Horizontal
-                canvas.drawLine(left + halfThick, y, left + boardSize - halfThick, y, thickLinePaint);
+                // Vertical: Extend lines to cover the full outer border
+                canvas.drawLine(x, cellAreaTop - halfThick, x, cellAreaTop + cellAreaSize + halfThick, thickLinePaint);
+                // Horizontal: Extend lines to cover the full outer border
+                canvas.drawLine(cellAreaLeft - halfThick, y, cellAreaLeft + cellAreaSize + halfThick, y,
+                        thickLinePaint);
             }
         }
     }
@@ -176,13 +186,30 @@ public class SudokuBoardView extends View {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            int left = (getWidth() - boardSize) / 2;
-            int top = (getHeight() - boardSize) / 2;
-            float x = event.getX() - left;
-            float y = event.getY() - top;
-            if (x >= 0 && y >= 0 && x < boardSize && y < boardSize) {
-                int col = (int) (x / cellSize);
-                int row = (int) (y / cellSize);
+            float touchX = event.getX();
+            float touchY = event.getY();
+
+            int availableWidth = getWidth();
+            int availableHeight = getHeight();
+            float margin = boardSize / 14f;
+
+            int drawBoardSize = availableWidth;
+            int boardLeft = 0;
+            int boardTop = (availableHeight - drawBoardSize) / 2;
+            if (availableHeight < availableWidth) {
+                drawBoardSize = availableHeight;
+                boardLeft = (availableWidth - drawBoardSize) / 2;
+                boardTop = 0;
+            }
+
+            float cellAreaLeft = boardLeft + margin;
+            float cellAreaTop = boardTop + margin;
+            float cellAreaSize = drawBoardSize - 2 * margin;
+            float currentCellSize = cellAreaSize / 9f;
+
+            if (touchX >= cellAreaLeft && touchX < cellAreaLeft + cellAreaSize && touchY >= cellAreaTop && touchY < cellAreaTop + cellAreaSize) {
+                int col = (int) ((touchX - cellAreaLeft) / currentCellSize);
+                int row = (int) ((touchY - cellAreaTop) / currentCellSize);
                 selectedRow = row;
                 selectedCol = col;
                 int val = sudokuGrid[row][col];

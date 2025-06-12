@@ -383,10 +383,15 @@ public class GameActivity extends AppCompatActivity {
                 .setTitle("Congratulations!")
                 .setMessage("You solved the puzzle!")
                 .setCancelable(false)
+                // This button will start a new game, then go to the main menu
                 .setPositiveButton("Back to Menu", (dialog, which) -> {
-                    this.deleteFile(currentDifficulty + "_progress.json");
+                    Intent menuIntent = new Intent(GameActivity.this, MainActivity.class);
+                    menuIntent.putExtra("completedDifficulty", currentDifficulty);
+                    menuIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(menuIntent);
                     finish();
                 })
+                // This button will just start a new game with the same difficulty
                 .setNegativeButton("New Game", (dialog, which) -> {
                     Intent newIntent = new Intent(GameActivity.this, GameActivity.class);
                     newIntent.putExtra("difficulty", currentDifficulty);

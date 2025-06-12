@@ -36,8 +36,19 @@ public class MainActivity extends AppCompatActivity {
     private void launchGame(String difficulty) {
         Intent intent = new Intent(MainActivity.this, GameActivity.class);
         intent.putExtra("difficulty", difficulty);
-        // Only set newGame=true if there is NO saved progress
-        if (!hasSavedProgress(difficulty)) {
+
+        Intent incoming = getIntent();
+        boolean forceNewGame = false;
+        if (incoming != null) {
+            String completedDiff = incoming.getStringExtra("completedDifficulty");
+            if (completedDiff != null && completedDiff.equals(difficulty)) {
+                forceNewGame = true;
+                // Clear the flag so it doesn't persist
+                incoming.removeExtra("completedDifficulty");
+            }
+        }
+
+        if (forceNewGame || !hasSavedProgress(difficulty)) {
             intent.putExtra("newGame", true);
         }
         startActivity(intent);
