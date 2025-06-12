@@ -86,17 +86,17 @@ public class SudokuBoardView extends View {
             top = 0;
         }
 
-        // Draw rounded white background (optional, can keep as is)
-        float radius = drawBoardSize / 18f;
-        RectF bgRect = new RectF(left, top, left + drawBoardSize, top + drawBoardSize);
-        cellBgPaint.setColor(Color.WHITE);
-        canvas.drawRoundRect(bgRect, radius, radius, cellBgPaint);
-
         // Adjust cell drawing area to be inside the margin
         float cellAreaLeft = left + margin;
         float cellAreaTop = top + margin;
         float cellAreaSize = drawBoardSize - 2 * margin;
         float cell = cellAreaSize / 9f;
+
+        // Draw rounded white background to match the cell area (inside thick borders)
+        float radius = cellAreaSize / 18f;
+        RectF bgRect = new RectF(cellAreaLeft, cellAreaTop, cellAreaLeft + cellAreaSize, cellAreaTop + cellAreaSize);
+        cellBgPaint.setColor(Color.WHITE);
+        canvas.drawRoundRect(bgRect, radius, radius, cellBgPaint);
 
         // Draw cells and numbers
         for (int r = 0; r < 9; r++) {
@@ -207,7 +207,8 @@ public class SudokuBoardView extends View {
             float cellAreaSize = drawBoardSize - 2 * margin;
             float currentCellSize = cellAreaSize / 9f;
 
-            if (touchX >= cellAreaLeft && touchX < cellAreaLeft + cellAreaSize && touchY >= cellAreaTop && touchY < cellAreaTop + cellAreaSize) {
+            if (touchX >= cellAreaLeft && touchX < cellAreaLeft + cellAreaSize && touchY >= cellAreaTop
+                    && touchY < cellAreaTop + cellAreaSize) {
                 int col = (int) ((touchX - cellAreaLeft) / currentCellSize);
                 int row = (int) ((touchY - cellAreaTop) / currentCellSize);
                 selectedRow = row;
