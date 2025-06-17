@@ -16,6 +16,10 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.Toast;
 import android.widget.TextView;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.rarid.sudoku.generator.SudokuGenerator;
 
@@ -29,6 +33,13 @@ public class GameActivity extends AppCompatActivity {
     private final View[] hintCircles = new View[3];
     private int[][] solutionGrid = new int[9][9];
     private boolean puzzleCompleted = false;
+    private long startTime;
+    private long pausedTime;
+    private boolean isPaused = false;
+    private TextView timerText;
+    private android.os.Handler timerHandler;
+    private Runnable timerRunnable;
+    private long totalElapsedTime = 0;
 
     private final boolean[] numberLocked = new boolean[10]; // 1-9, ignore index 0
 
@@ -43,6 +54,7 @@ public class GameActivity extends AppCompatActivity {
 
         // --- Get references to views from XML ---
         boardView = findViewById(R.id.sudoku_board);
+        timerText = findViewById(R.id.timer_text);
 
         hintCircles[0] = findViewById(R.id.hint_circle_1);
         hintCircles[1] = findViewById(R.id.hint_circle_2);
@@ -52,57 +64,57 @@ public class GameActivity extends AppCompatActivity {
         Button pencilToggle = findViewById(R.id.pencil_toggle);
         ImageButton settingsBtn = findViewById(R.id.settings_button);
 
+        // Initialize timer
+        if (savedInstanceState != null) {
+            startTime = savedInstanceState.getLong("startTime", System.currentTimeMillis());
+            pausedTime = savedInstanceState.getLong("pausedTime", 0);
+            totalElapsedTime = savedInstanceState.getLong("totalElapsedTime", 0);
+            isPaused = savedInstanceState.getBoolean("isPaused", false);
+        } else {
+            startTime = System.currentTimeMillis();
+            pausedTime = 0;
+            totalElapsedTime = 0;
+            isPaused = false;
+        }
+
+        timerHandler = new android.os.Handler();
+        timerRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (!isPaused && !puzzleCompleted) {
+                    long currentTime = System.currentTimeMillis();
+                    long elapsedTime = totalElapsedTime + (currentTime - startTime - pausedTime);
+                    if (elapsedTime < 0)
+                        elapsedTime = 0;
+
+                    int seconds = (int) (elapsedTime / 1000);
+                    int minutes = seconds / 60;
+                    seconds = seconds % 60;
+                    timerText.setText(String.format("%02d:%02d", minutes, seconds));
+                }
+                timerHandler.postDelayed(this, 1000);
+            }
+        };
+        timerHandler.post(timerRunnable);
+
         // --- Game Logic Loading (unchanged, same as yours) ---
-        Intent intent = getIntent();
-        if (intent != null) {
-            currentDifficulty = intent.getStringExtra("difficulty");
-            boolean newGame = intent.getBooleanExtra("newGame", false);
+        AtomicReference<Intent> intent = new AtomicReference<>(getIntent());
+        if (intent.get() != null) {
+            currentDifficulty = intent.get().getStringExtra("difficulty");
+            boolean newGame = intent.get().getBooleanExtra("newGame", false);
 
             if (newGame) {
                 SudokuGenerator.PuzzleWithSolution pws = SudokuGenerator
                         .generatePuzzleAndSolutionForDifficulty(currentDifficulty);
                 SudokuGenerator.saveGeneratedPuzzle(this, currentDifficulty, pws.puzzle, pws.solution);
                 this.deleteFile(currentDifficulty + "_progress.json");
+                this.deleteFile(currentDifficulty + "_completed.json"); // <-- Add this line
                 boardView.setGrid(pws.puzzle);
                 hintsLeft = 3;
                 hintsUsed = 0;
                 solutionGrid = pws.solution;
             } else {
-                ProgressManager.ProgressData data = ProgressManager.loadProgress(this, currentDifficulty);
-                if (data != null) {
-                    boardView.setGridAndClues(data.grid, data.isClue);
-                    if (data.pencilmarks != null) {
-                        boardView.setPencilmarks(data.pencilmarks);
-                    }
-                    if (data.isError != null) {
-                        boardView.setIsError(data.isError);
-                    }
-                    hintsLeft = data.hintsLeft;
-                    hintsUsed = data.hintsUsed;
-                    boolean validSolution = false;
-                    if (data.solutionGrid != null && data.solutionGrid.length == 9) {
-                        outer: for (int r = 0; r < 9; r++) {
-                            for (int c = 0; c < 9; c++) {
-                                if (data.solutionGrid[r][c] != 0) {
-                                    validSolution = true;
-                                    break outer;
-                                }
-                            }
-                        }
-                        if (validSolution) {
-                            solutionGrid = data.solutionGrid;
-                        }
-                    }
-                    if (!validSolution) {
-                        solutionGrid = loadSolutionFromAssets(currentDifficulty);
-                    }
-                } else {
-                    int[][] puzzle = loadPuzzleFromUserCopy(currentDifficulty);
-                    boardView.setGrid(puzzle);
-                    hintsLeft = 3;
-                    hintsUsed = 0;
-                    solutionGrid = loadSolutionFromAssets(currentDifficulty);
-                }
+                loadProgress();
             }
         }
 
@@ -245,6 +257,13 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void saveProgress() {
+        if (puzzleCompleted)
+            return;
+
+        long currentTime = System.currentTimeMillis();
+        long sessionTime = currentTime - startTime;
+        long finalElapsedTime = totalElapsedTime + sessionTime;
+
         ProgressManager.saveProgress(
                 this,
                 currentDifficulty,
@@ -254,13 +273,79 @@ public class GameActivity extends AppCompatActivity {
                 boardView.getIsError(),
                 hintsLeft,
                 hintsUsed,
-                solutionGrid);
+                solutionGrid,
+                finalElapsedTime,
+                startTime,
+                pausedTime);
+    }
+
+    private void loadProgress() {
+        ProgressManager.ProgressData data = ProgressManager.loadProgress(this, currentDifficulty);
+        if (data != null) {
+            boardView.setGridAndClues(data.grid, data.isClue);
+            if (data.pencilmarks != null) {
+                boardView.setPencilmarks(data.pencilmarks);
+            }
+            if (data.isError != null) {
+                boardView.setIsError(data.isError);
+            }
+            hintsLeft = data.hintsLeft;
+            hintsUsed = data.hintsUsed;
+            solutionGrid = data.solutionGrid;
+            startTime = data.startTime;
+            pausedTime = data.pausedTime;
+            totalElapsedTime = data.totalElapsedTime;
+            updateHintCircles();
+        } else {
+            // Only load a new puzzle if there's no saved progress
+            int[][] puzzle = loadPuzzleFromUserCopy(currentDifficulty);
+            if (puzzle == null || puzzle[0][0] == 0) {
+                // If no puzzle exists, generate a new one
+                SudokuGenerator.PuzzleWithSolution pws = SudokuGenerator
+                        .generatePuzzleAndSolutionForDifficulty(currentDifficulty);
+                SudokuGenerator.saveGeneratedPuzzle(this, currentDifficulty, pws.puzzle, pws.solution);
+                boardView.setGrid(pws.puzzle);
+                solutionGrid = pws.solution;
+            } else {
+                boardView.setGrid(puzzle);
+                solutionGrid = loadSolutionFromAssets(currentDifficulty);
+            }
+            hintsLeft = 3;
+            hintsUsed = 0;
+            startTime = System.currentTimeMillis();
+            pausedTime = 0;
+        }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putLong("startTime", startTime);
+        outState.putLong("pausedTime", pausedTime);
+        outState.putLong("totalElapsedTime", totalElapsedTime);
+        outState.putBoolean("isPaused", isPaused);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        if (!puzzleCompleted) {
+            isPaused = true;
+            long currentTime = System.currentTimeMillis();
+            long sessionTime = currentTime - startTime;
+            pausedTime += sessionTime;
+            totalElapsedTime += sessionTime;
+        }
         saveProgress();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (!puzzleCompleted) {
+            isPaused = false;
+            startTime = System.currentTimeMillis();
+        }
     }
 
     private int[][] loadSolutionFromAssets(String difficulty) {
@@ -374,31 +459,29 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void showCompletionDialog() {
-        if (puzzleCompleted)
-            return;
         puzzleCompleted = true;
-        ProgressManager.saveCompleted(this, currentDifficulty);
+        if (timerHandler != null) {
+            timerHandler.removeCallbacks(timerRunnable);
+        }
+
+        long currentTime = System.currentTimeMillis();
+        long sessionTime = currentTime - startTime;
+        long finalTime = totalElapsedTime + sessionTime;
+
+        // Save the completion time
+        ProgressManager.saveBestTime(this, currentDifficulty, finalTime);
 
         new androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("Congratulations!")
-                .setMessage("You solved the puzzle!")
-                .setCancelable(false)
-                // This button will start a new game, then go to the main menu
-                .setPositiveButton("Back to Menu", (dialog, which) -> {
-                    Intent menuIntent = new Intent(GameActivity.this, MainActivity.class);
-                    menuIntent.putExtra("completedDifficulty", currentDifficulty);
-                    menuIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(menuIntent);
+                .setMessage("You completed the puzzle!")
+                .setPositiveButton("New Game", (dialog, which) -> {
+                    Intent intent = new Intent(GameActivity.this, GameActivity.class);
+                    intent.putExtra("difficulty", currentDifficulty);
+                    intent.putExtra("newGame", true);
                     finish();
+                    startActivity(intent);
                 })
-                // This button will just start a new game with the same difficulty
-                .setNegativeButton("New Game", (dialog, which) -> {
-                    Intent newIntent = new Intent(GameActivity.this, GameActivity.class);
-                    newIntent.putExtra("difficulty", currentDifficulty);
-                    newIntent.putExtra("newGame", true);
-                    finish();
-                    startActivity(newIntent);
-                })
+                .setNegativeButton("Close", (dialog, which) -> dialog.dismiss())
                 .show();
     }
 
