@@ -1,6 +1,5 @@
 package com.rarid.sudoku;
 
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,14 +10,10 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class TimesFragment extends Fragment {
     private static final String ARG_DIFFICULTY = "difficulty";
-    private static final String PREFS_NAME = "SudokuTimes";
-    private static final int MAX_SCORES = 10;
 
     public static TimesFragment newInstance(String difficulty) {
         TimesFragment fragment = new TimesFragment();
@@ -65,25 +60,5 @@ public class TimesFragment extends Fragment {
         }
 
         return view;
-    }
-
-    private List<Long> loadTimes(String difficulty) {
-        if (difficulty == null) {
-            return new ArrayList<>();
-        }
-
-        SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_NAME,
-                android.content.Context.MODE_PRIVATE);
-        List<Long> times = new ArrayList<>();
-
-        for (int i = 0; i < MAX_SCORES; i++) {
-            long time = prefs.getLong(difficulty + "_time_" + i, 0);
-            if (time > 0) {
-                times.add(time);
-            }
-        }
-
-        Collections.sort(times);
-        return times;
     }
 }

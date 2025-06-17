@@ -83,7 +83,7 @@ public class GameActivity extends AppCompatActivity {
             public void run() {
                 if (!isPaused && !puzzleCompleted) {
                     long currentTime = System.currentTimeMillis();
-                    long elapsedTime = totalElapsedTime + (currentTime - startTime - pausedTime);
+                    long elapsedTime = totalElapsedTime + (currentTime - startTime);
                     if (elapsedTime < 0)
                         elapsedTime = 0;
 
@@ -292,9 +292,9 @@ public class GameActivity extends AppCompatActivity {
             hintsLeft = data.hintsLeft;
             hintsUsed = data.hintsUsed;
             solutionGrid = data.solutionGrid;
-            startTime = data.startTime;
-            pausedTime = data.pausedTime;
-            totalElapsedTime = data.totalElapsedTime;
+            startTime = System.currentTimeMillis(); // Reset startTime to current time
+            pausedTime = 0; // Reset pausedTime
+            totalElapsedTime = data.totalElapsedTime; // Keep the total elapsed time
             updateHintCircles();
         } else {
             // Only load a new puzzle if there's no saved progress
@@ -314,6 +314,7 @@ public class GameActivity extends AppCompatActivity {
             hintsUsed = 0;
             startTime = System.currentTimeMillis();
             pausedTime = 0;
+            totalElapsedTime = 0;
         }
     }
 
@@ -333,8 +334,8 @@ public class GameActivity extends AppCompatActivity {
             isPaused = true;
             long currentTime = System.currentTimeMillis();
             long sessionTime = currentTime - startTime;
-            pausedTime += sessionTime;
             totalElapsedTime += sessionTime;
+            startTime = currentTime;
         }
         saveProgress();
     }
