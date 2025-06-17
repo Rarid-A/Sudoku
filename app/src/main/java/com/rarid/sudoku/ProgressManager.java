@@ -8,8 +8,13 @@ import org.json.JSONObject;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class ProgressManager {
+    private static final String PREFS_NAME = "SudokuTimes";
+    private static final int MAX_SCORES = 10;
 
     public static void saveProgress(Context context, String difficulty, int[][] grid,
             boolean[][] isClue,
@@ -17,7 +22,10 @@ public class ProgressManager {
             boolean[][] isError,
             int hintsLeft,
             int hintsUsed,
-            int[][] solutionGrid) { // <-- add solutionGrid parameter
+            int[][] solutionGrid,
+            long totalElapsedTime,
+            long startTime,
+            long pausedTime) {
         try {
             JSONObject obj = new JSONObject();
 
@@ -79,6 +87,13 @@ public class ProgressManager {
                 solutionArr.put(rowArr);
             }
             obj.put("solutionGrid", solutionArr);
+
+            // Save total elapsed time
+            obj.put("totalElapsedTime", totalElapsedTime);
+
+            // Save start time and paused time
+            obj.put("startTime", startTime);
+            obj.put("pausedTime", pausedTime);
 
             String filename = difficulty + "_progress.json";
             java.io.FileOutputStream fos = context.openFileOutput(filename, Context.MODE_PRIVATE);
@@ -166,7 +181,15 @@ public class ProgressManager {
                 }
             }
 
-            return new ProgressData(grid, isClue, pencilmarks, isError, hintsLeft, hintsUsed, solutionGrid);
+            // Load total elapsed time
+            long totalElapsedTime = obj.has("totalElapsedTime") ? obj.getLong("totalElapsedTime") : 0;
+
+            // Load start time and paused time
+            long startTime = obj.has("startTime") ? obj.getLong("startTime") : System.currentTimeMillis();
+            long pausedTime = obj.has("pausedTime") ? obj.getLong("pausedTime") : 0;
+
+            return new ProgressData(grid, isClue, pencilmarks, isError, hintsLeft, hintsUsed, solutionGrid,
+                    totalElapsedTime, startTime, pausedTime);
         } catch (Exception e) {
             return null; // No progress or error
         }
@@ -198,6 +221,52 @@ public class ProgressManager {
         return prefs.getBoolean("hints_enabled", false);
     }
 
+    // Save best times for a difficulty
+    public static void saveBestTime(Context context, String difficulty, long timeInMillis) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        List<Long> times = new ArrayList<>();
+
+        // Load existing times
+        for (int i = 0; i < MAX_SCORES; i++) {
+            long time = prefs.getLong(difficulty + "_time_" + i, 0);
+            if (time > 0) {
+                times.add(time);
+            }
+        }
+
+        // Add new time
+        times.add(timeInMillis);
+
+        // Sort and keep top 10
+        Collections.sort(times);
+        if (times.size() > MAX_SCORES) {
+            times = times.subList(0, MAX_SCORES);
+        }
+
+        // Save back to preferences
+        SharedPreferences.Editor editor = prefs.edit();
+        for (int i = 0; i < times.size(); i++) {
+            editor.putLong(difficulty + "_time_" + i, times.get(i));
+        }
+        editor.apply();
+    }
+
+    // Load best times for a difficulty
+    public static List<Long> loadBestTimes(Context context, String difficulty) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        List<Long> times = new ArrayList<>();
+
+        for (int i = 0; i < MAX_SCORES; i++) {
+            long time = prefs.getLong(difficulty + "_time_" + i, 0);
+            if (time > 0) {
+                times.add(time);
+            }
+        }
+
+        Collections.sort(times);
+        return times;
+    }
+
     public static class ProgressData {
         public int[][] grid;
         public boolean[][] isClue;
@@ -205,10 +274,14 @@ public class ProgressManager {
         public boolean[][] isError;
         public int hintsLeft;
         public int hintsUsed;
-        public int[][] solutionGrid; // <-- add this
+        public int[][] solutionGrid;
+        public long totalElapsedTime;
+        public long startTime;
+        public long pausedTime;
 
         public ProgressData(int[][] grid, boolean[][] isClue, Set<Integer>[][] pencilmarks, boolean[][] isError,
-                int hintsLeft, int hintsUsed, int[][] solutionGrid) {
+                int hintsLeft, int hintsUsed, int[][] solutionGrid, long totalElapsedTime, long startTime,
+                long pausedTime) {
             this.grid = grid;
             this.isClue = isClue;
             this.pencilmarks = pencilmarks;
@@ -216,6 +289,9 @@ public class ProgressManager {
             this.hintsLeft = hintsLeft;
             this.hintsUsed = hintsUsed;
             this.solutionGrid = solutionGrid;
+            this.totalElapsedTime = totalElapsedTime;
+            this.startTime = startTime;
+            this.pausedTime = pausedTime;
         }
     }
 }

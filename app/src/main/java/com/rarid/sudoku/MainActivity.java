@@ -13,6 +13,11 @@ public class MainActivity extends AppCompatActivity {
         return file.exists();
     }
 
+    private boolean isPuzzleCompleted(String difficulty) {
+        java.io.File file = new java.io.File(getFilesDir(), difficulty + "_completed.json");
+        return file.exists();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -22,35 +27,28 @@ public class MainActivity extends AppCompatActivity {
         Button easyButton = findViewById(R.id.easy_button);
         Button mediumButton = findViewById(R.id.medium_button);
         Button hardButton = findViewById(R.id.hard_button);
+        Button leaderboardButton = findViewById(R.id.leaderboard_button);
 
         title.setText("Sudoku");
 
         easyButton.setOnClickListener(v -> launchGame("easy"));
-
         mediumButton.setOnClickListener(v -> launchGame("medium"));
-
         hardButton.setOnClickListener(v -> launchGame("hard"));
+        leaderboardButton.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, TimerActivity.class);
+            intent.putExtra("difficulty", "easy"); // Default to easy difficulty
+            startActivity(intent);
+        });
     }
 
-    // Add this helper method:
     private void launchGame(String difficulty) {
+        boolean hasProgress = hasSavedProgress(difficulty);
+        boolean completed = isPuzzleCompleted(difficulty);
+
         Intent intent = new Intent(MainActivity.this, GameActivity.class);
         intent.putExtra("difficulty", difficulty);
-
-        Intent incoming = getIntent();
-        boolean forceNewGame = false;
-        if (incoming != null) {
-            String completedDiff = incoming.getStringExtra("completedDifficulty");
-            if (completedDiff != null && completedDiff.equals(difficulty)) {
-                forceNewGame = true;
-                // Clear the flag so it doesn't persist
-                incoming.removeExtra("completedDifficulty");
-            }
-        }
-
-        if (forceNewGame || !hasSavedProgress(difficulty)) {
-            intent.putExtra("newGame", true);
-        }
+        // Only start a new game if no progress or completed
+        intent.putExtra("newGame", !hasProgress || completed);
         startActivity(intent);
     }
 }
