@@ -3,8 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:padding="12dp"
-    android:background="?android:attr/selectableItemBackground">
+    android:padding="16dp"
+    android:background="?attr/selectableItemBackground">
 
     <TextView
         android:id="@+id/rank_text"
@@ -12,12 +12,14 @@
         android:layout_height="wrap_content"
         android:textSize="18sp"
         android:textStyle="bold"
-        android:layout_marginEnd="16dp"/>
+        android:layout_marginEnd="16dp"
+        android:textColor="?attr/colorOnSurface"/>
 
     <TextView
         android:id="@+id/time_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="18sp"/>
+        android:textSize="18sp"
+        android:textColor="?attr/colorOnSurface"/>
 
 </LinearLayout> 
