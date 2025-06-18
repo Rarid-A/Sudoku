@@ -27,6 +27,15 @@ public class SudokuBoardView extends View {
     private boolean pencilmarkMode = false; // If true, number input will pencilmark instead of set
     private Integer highlightedNumber = null; // null means no highlight
 
+    // Screen burn prevention variables
+    private float currentOffsetX = 0;
+    private float currentOffsetY = 0;
+    private float currentOpacity = 1.0f;
+    private long lastAnimationTime = 0;
+    private static final long ANIMATION_INTERVAL = 5 * 60 * 1000; // 5 minutes
+    private static final float MAX_OFFSET = 2.0f; // Maximum pixel offset
+    private static final float OPACITY_VARIATION = 0.02f; // Maximum opacity variation
+
     public SudokuBoardView(Context context, AttributeSet attrs) {
         super(context, attrs);
         init();
@@ -68,34 +77,33 @@ public class SudokuBoardView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
+        // Update screen burn prevention
+        updateScreenBurnPrevention();
+
         int availableWidth = getWidth();
         int availableHeight = getHeight();
+        float margin = boardSize / 14f;
 
-        // Margin between board border and cells (in pixels)
-        // Increased margin for better spacing between border and cells
-        float margin = boardSize / 14f; // ~7% of board size
-
-        // Always use the width as the limiting factor
         int drawBoardSize = availableWidth;
         int left = 0;
         int top = (availableHeight - drawBoardSize) / 2;
         if (availableHeight < availableWidth) {
-            // In landscape, fit to height instead
             drawBoardSize = availableHeight;
             left = (availableWidth - drawBoardSize) / 2;
             top = 0;
         }
 
-        // Adjust cell drawing area to be inside the margin
-        float cellAreaLeft = left + margin;
-        float cellAreaTop = top + margin;
+        // Apply screen burn prevention offsets
+        float cellAreaLeft = left + margin + currentOffsetX;
+        float cellAreaTop = top + margin + currentOffsetY;
         float cellAreaSize = drawBoardSize - 2 * margin;
         float cell = cellAreaSize / 9f;
 
-        // Draw rounded white background to match the cell area (inside thick borders)
+        // Apply opacity variation
         float radius = cellAreaSize / 18f;
         RectF bgRect = new RectF(cellAreaLeft, cellAreaTop, cellAreaLeft + cellAreaSize, cellAreaTop + cellAreaSize);
         cellBgPaint.setColor(Color.WHITE);
+        cellBgPaint.setAlpha((int) (255 * currentOpacity));
         canvas.drawRoundRect(bgRect, radius, radius, cellBgPaint);
 
         // Draw cells and numbers
@@ -179,6 +187,17 @@ public class SudokuBoardView extends View {
                 canvas.drawLine(cellAreaLeft - halfThick, y, cellAreaLeft + cellAreaSize + halfThick, y,
                         thickLinePaint);
             }
+        }
+    }
+
+    private void updateScreenBurnPrevention() {
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastAnimationTime >= ANIMATION_INTERVAL) {
+            // Generate new random offsets
+            currentOffsetX = (float) (Math.random() * MAX_OFFSET * 2 - MAX_OFFSET);
+            currentOffsetY = (float) (Math.random() * MAX_OFFSET * 2 - MAX_OFFSET);
+            currentOpacity = 1.0f - (float) (Math.random() * OPACITY_VARIATION);
+            lastAnimationTime = currentTime;
         }
     }
 
