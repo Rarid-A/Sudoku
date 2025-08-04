@@ -26,7 +26,7 @@ public class SudokuBoardView extends View {
     private boolean[][] isError = new boolean[9][9];
     private int selectedRow = -1, selectedCol = -1;
     private final Set<Integer>[][] pencilmarks = new HashSet[9][9];
-    private boolean pencilmarkMode = false; // If true, number input will pencilmark instead of set
+    private boolean pencilmarkMode = false; // If true, number input will add notes instead of set
     private Integer highlightedNumber = null; // null means no highlight
     
     // Undo functionality
@@ -142,10 +142,10 @@ public class SudokuBoardView extends View {
                     float textY = y + cell / 2f - (textPaint.descent() + textPaint.ascent()) / 2;
                     canvas.drawText(String.valueOf(val), x + cell / 2f, textY, textPaint);
                 } else if (!pencilmarks[r][c].isEmpty()) {
-                    // Draw pencilmarked numbers (pencil marks)
+                    // Draw notes (pencil marks)
                     float pencilmarkTextSize = cell * 0.22f;
                     textPaint.setTextSize(pencilmarkTextSize);
-                    textPaint.setColor(0xFF888888); // Gray for pencilmarks
+                    textPaint.setColor(0xFF888888); // Gray for notes
                     int count = 0;
                     for (int n = 1; n <= 9; n++) {
                         if (pencilmarks[r][c].contains(n)) {

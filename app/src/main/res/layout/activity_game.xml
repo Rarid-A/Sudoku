@@ -279,7 +279,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:minWidth="120dp"
-            android:text="Pencilmark: OFF"
+            android:text="Notes: OFF"
             android:textColor="#0D47A1" />
     </LinearLayout>
 

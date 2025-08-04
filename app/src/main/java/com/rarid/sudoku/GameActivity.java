@@ -143,7 +143,7 @@ public class GameActivity extends AppCompatActivity {
         pencilToggle.setOnClickListener(v -> {
             boolean isOn = pencilToggle.getText().toString().endsWith("OFF");
             boardView.setPencilmarkMode(isOn);
-            pencilToggle.setText("Pencilmark: " + (isOn ? "ON" : "OFF"));
+            pencilToggle.setText("Notes: " + (isOn ? "ON" : "OFF"));
         });
 
         undoButton.setOnClickListener(v -> {
@@ -177,7 +177,7 @@ public class GameActivity extends AppCompatActivity {
         // Load settings and configure UI
         SharedPreferences prefs = getSharedPreferences("sudoku_settings", MODE_PRIVATE);
         boolean hintsEnabled = prefs.getBoolean("hints_enabled", false);
-        boolean pencilmarkEnabled = prefs.getBoolean("pencilmark_enabled", true);
+        boolean notesEnabled = prefs.getBoolean("pencilmark_enabled", true);
         
         Button hintButton = findViewById(R.id.hint_button);
         hintButton.setVisibility(hintsEnabled ? View.VISIBLE : View.GONE);
@@ -186,8 +186,8 @@ public class GameActivity extends AppCompatActivity {
         View hintCirclesLayout = findViewById(R.id.hint_circles_layout);
         hintCirclesLayout.setVisibility(hintsEnabled ? View.VISIBLE : View.GONE);
         
-        // Configure pencilmark toggle based on settings
-        if (!pencilmarkEnabled) {
+        // Configure notes toggle based on settings
+        if (!notesEnabled) {
             pencilToggle.setVisibility(View.GONE);
             boardView.setPencilmarkMode(false);
         } else {
@@ -209,7 +209,7 @@ public class GameActivity extends AppCompatActivity {
         if (requestCode == SETTINGS_REQUEST) {
             SharedPreferences prefs = getSharedPreferences("sudoku_settings", MODE_PRIVATE);
             boolean hintsEnabled = prefs.getBoolean("hints_enabled", false);
-            boolean pencilmarkEnabled = prefs.getBoolean("pencilmark_enabled", true);
+            boolean notesEnabled = prefs.getBoolean("pencilmark_enabled", true);
             
             Button hintButton = findViewById(R.id.hint_button);
             hintButton.setVisibility(hintsEnabled ? View.VISIBLE : View.GONE);
@@ -218,9 +218,9 @@ public class GameActivity extends AppCompatActivity {
             View hintCirclesLayout = findViewById(R.id.hint_circles_layout);
             hintCirclesLayout.setVisibility(hintsEnabled ? View.VISIBLE : View.GONE);
             
-            // Update pencilmark toggle visibility
+            // Update notes toggle visibility
             Button pencilToggle = findViewById(R.id.pencil_toggle);
-            if (!pencilmarkEnabled) {
+            if (!notesEnabled) {
                 pencilToggle.setVisibility(View.GONE);
                 boardView.setPencilmarkMode(false);
             } else {
@@ -508,24 +508,26 @@ public class GameActivity extends AppCompatActivity {
         // Disable all buttons to prevent multiple completions
         disableAllButtons();
 
-        new androidx.appcompat.app.AlertDialog.Builder(this)
+        androidx.appcompat.app.AlertDialog dialog = new androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("Congratulations!")
                 .setMessage("You completed the puzzle!")
-                .setPositiveButton("New Game", (dialog, which) -> {
+                .setCancelable(false) // Prevent dismissing by tapping outside
+                .setPositiveButton("New Game", (dialogInterface, which) -> {
                     Intent intent = new Intent(GameActivity.this, GameActivity.class);
                     intent.putExtra("difficulty", currentDifficulty);
                     intent.putExtra("newGame", true);
                     finish();
                     startActivity(intent);
                 })
-                .setNegativeButton("Close", (dialog, which) -> {
+                .setNegativeButton("Close", (dialogInterface, which) -> {
                     // Return to main activity
                     Intent intent = new Intent(GameActivity.this, MainActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
                     finish();
                     startActivity(intent);
                 })
-                .show();
+                .create();
+        dialog.show();
     }
 
     private void disableAllButtons() {

@@ -49,7 +49,7 @@ public class ProgressManager {
             }
             obj.put("isClue", clueArr);
 
-            // Save pencilmarks
+            // Save notes
             JSONArray pencilmarksArr = new JSONArray();
             for (int r = 0; r < 9; r++) {
                 JSONArray rowArr = new JSONArray();
@@ -141,7 +141,7 @@ public class ProgressManager {
                 }
             }
 
-            // Load pencilmarks
+            // Load notes
             if (obj.has("pencilmarks")) {
                 JSONArray pencilmarksArr = obj.getJSONArray("pencilmarks");
                 for (int r = 0; r < 9; r++) {
