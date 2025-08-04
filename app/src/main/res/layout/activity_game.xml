@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"> <!-- Add this line -->
@@ -161,13 +162,13 @@
             android:textColor="#0D47A1" />
 
         <Button
-            android:id="@+id/pencil_toggle"
+            android:id="@+id/undo_button"
             style="@style/SudokuButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:minWidth="80dp"
-            android:text="Pencilmark: OFF"
+            android:text="Undo"
             android:textColor="#0D47A1" />
     </LinearLayout>
 
@@ -258,6 +259,28 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="9" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/pencilmark_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toTopOf="@id/numbers_toolbar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/action_buttons_row">
+
+        <Button
+            android:id="@+id/pencil_toggle"
+            style="@style/SudokuButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:minWidth="120dp"
+            android:text="Pencilmark: OFF"
+            android:textColor="#0D47A1" />
     </LinearLayout>
 
     <androidx.constraintlayout.widget.Guideline

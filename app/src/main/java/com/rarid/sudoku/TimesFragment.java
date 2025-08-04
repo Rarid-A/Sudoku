@@ -34,6 +34,7 @@ public class TimesFragment extends Fragment {
         TextView difficultyTitle = view.findViewById(R.id.difficulty_title);
         TextView noTimesMessage = view.findViewById(R.id.no_times_message);
         RecyclerView recyclerView = view.findViewById(R.id.times_recycler_view);
+        TextView completedGamesCount = view.findViewById(R.id.completed_games_count);
 
         if (difficultyTitle != null) {
             difficultyTitle.setText(difficulty.substring(0, 1).toUpperCase() + difficulty.substring(1));
@@ -57,6 +58,11 @@ public class TimesFragment extends Fragment {
                 TimesAdapter adapter = new TimesAdapter(times);
                 recyclerView.setAdapter(adapter);
             }
+        }
+
+        if (completedGamesCount != null) {
+            int completedCount = ProgressManager.getCompletedGamesCount(requireContext(), difficulty);
+            completedGamesCount.setText("Completed games: " + completedCount);
         }
 
         return view;

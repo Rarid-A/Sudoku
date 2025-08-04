@@ -11,6 +11,8 @@ import android.view.View;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SudokuBoardView extends View {
     private Paint thickLinePaint;
@@ -26,6 +28,10 @@ public class SudokuBoardView extends View {
     private final Set<Integer>[][] pencilmarks = new HashSet[9][9];
     private boolean pencilmarkMode = false; // If true, number input will pencilmark instead of set
     private Integer highlightedNumber = null; // null means no highlight
+    
+    // Undo functionality
+    private List<Move> moveHistory = new ArrayList<>();
+    private static final int MAX_UNDO_MOVES = 10;
 
     // Screen burn prevention variables
     private float currentOffsetX = 0;
@@ -266,16 +272,23 @@ public class SudokuBoardView extends View {
     // Set a number or pencilmark in the selected cell
     public void setNumber(int number) {
         if (selectedRow >= 0 && selectedCol >= 0 && !isClue[selectedRow][selectedCol]) {
+            int oldValue = sudokuGrid[selectedRow][selectedCol];
+            Set<Integer> oldPencilmarks = new HashSet<>(pencilmarks[selectedRow][selectedCol]);
+            
             if (pencilmarkMode) {
                 if (pencilmarks[selectedRow][selectedCol].contains(number)) {
                     pencilmarks[selectedRow][selectedCol].remove(number);
                 } else {
                     pencilmarks[selectedRow][selectedCol].add(number);
                 }
+                // Record move for undo
+                addMoveToHistory(selectedRow, selectedCol, oldValue, 0, oldPencilmarks, true);
                 invalidate();
             } else {
                 sudokuGrid[selectedRow][selectedCol] = number;
                 pencilmarks[selectedRow][selectedCol].clear(); // Clear pencilmarks on input
+                // Record move for undo
+                addMoveToHistory(selectedRow, selectedCol, oldValue, number, oldPencilmarks, false);
                 checkErrors();
                 highlightedNumber = number; // highlight this number
                 invalidate();
@@ -286,12 +299,19 @@ public class SudokuBoardView extends View {
     // Delete user input or pencilmarks in selected cell
     public void deleteSelected() {
         if (selectedRow >= 0 && selectedCol >= 0 && !isClue[selectedRow][selectedCol]) {
+            int oldValue = sudokuGrid[selectedRow][selectedCol];
+            Set<Integer> oldPencilmarks = new HashSet<>(pencilmarks[selectedRow][selectedCol]);
+            
             if (pencilmarkMode) {
                 pencilmarks[selectedRow][selectedCol].clear();
+                // Record move for undo
+                addMoveToHistory(selectedRow, selectedCol, 0, 0, oldPencilmarks, true);
             } else {
                 sudokuGrid[selectedRow][selectedCol] = 0;
                 isError[selectedRow][selectedCol] = false;
                 highlightedNumber = null; // clear highlight
+                // Record move for undo
+                addMoveToHistory(selectedRow, selectedCol, oldValue, 0, oldPencilmarks, false);
                 checkErrors(); // <-- Add this line!
             }
             invalidate();
@@ -425,5 +445,57 @@ public class SudokuBoardView extends View {
 
     public boolean isPencilmarkMode() {
         return pencilmarkMode;
+    }
+    
+    // Undo functionality methods
+    private void addMoveToHistory(int row, int col, int oldValue, int newValue, Set<Integer> oldPencilmarks, boolean wasPencilmark) {
+        Move move = new Move(row, col, oldValue, newValue, new HashSet<>(oldPencilmarks), wasPencilmark);
+        moveHistory.add(move);
+        
+        // Limit history size
+        if (moveHistory.size() > MAX_UNDO_MOVES) {
+            moveHistory.remove(0);
+        }
+    }
+    
+    public boolean canUndo() {
+        return !moveHistory.isEmpty();
+    }
+    
+    public void undo() {
+        if (!moveHistory.isEmpty()) {
+            Move lastMove = moveHistory.remove(moveHistory.size() - 1);
+            
+            // Restore the previous state
+            if (lastMove.wasPencilmark()) {
+                // Restore pencilmarks
+                pencilmarks[lastMove.getRow()][lastMove.getCol()].clear();
+                pencilmarks[lastMove.getRow()][lastMove.getCol()].addAll(lastMove.getOldPencilmarks());
+            } else {
+                // Restore number
+                sudokuGrid[lastMove.getRow()][lastMove.getCol()] = lastMove.getOldValue();
+                pencilmarks[lastMove.getRow()][lastMove.getCol()].clear();
+                pencilmarks[lastMove.getRow()][lastMove.getCol()].addAll(lastMove.getOldPencilmarks());
+                
+                // Clear error state
+                isError[lastMove.getRow()][lastMove.getCol()] = false;
+                
+                // Update highlight
+                if (lastMove.getOldValue() > 0) {
+                    highlightedNumber = lastMove.getOldValue();
+                } else {
+                    highlightedNumber = null;
+                }
+                
+                // Recheck errors
+                checkErrors();
+            }
+            
+            invalidate();
+        }
+    }
+    
+    public void clearMoveHistory() {
+        moveHistory.clear();
     }
 }

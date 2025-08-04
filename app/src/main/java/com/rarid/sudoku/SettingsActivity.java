@@ -17,6 +17,7 @@ public class SettingsActivity extends AppCompatActivity {
     private Switch hintSwitch;
     private Button newGameButton;
     private Switch autoValidateSwitch;
+    private Switch pencilmarkSwitch;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,6 +29,7 @@ public class SettingsActivity extends AppCompatActivity {
         ImageView closeBtn = findViewById(R.id.iv_close_settings);
         hintTextView = findViewById(R.id.tv_hint_label);
         autoValidateSwitch = findViewById(R.id.switch_autovalidate);
+        pencilmarkSwitch = findViewById(R.id.switch_pencilmark);
 
         // Load preferences
         SharedPreferences prefs = getSharedPreferences("sudoku_settings", MODE_PRIVATE);
@@ -37,12 +39,19 @@ public class SettingsActivity extends AppCompatActivity {
         boolean autoValidateEnabled = prefs.getBoolean("auto_validate_enabled", true);
         autoValidateSwitch.setChecked(autoValidateEnabled);
 
+        boolean pencilmarkEnabled = prefs.getBoolean("pencilmark_enabled", true);
+        pencilmarkSwitch.setChecked(pencilmarkEnabled);
+
         hintSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             prefs.edit().putBoolean("hints_enabled", isChecked).apply();
         });
 
         autoValidateSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             prefs.edit().putBoolean("auto_validate_enabled", isChecked).apply();
+        });
+
+        pencilmarkSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            prefs.edit().putBoolean("pencilmark_enabled", isChecked).apply();
         });
 
         newGameButton.setOnClickListener(v -> {

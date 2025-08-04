@@ -248,6 +248,11 @@ public class ProgressManager {
         for (int i = 0; i < times.size(); i++) {
             editor.putLong(difficulty + "_time_" + i, times.get(i));
         }
+        
+        // Increment completed games count
+        int completedCount = prefs.getInt(difficulty + "_completed_count", 0);
+        editor.putInt(difficulty + "_completed_count", completedCount + 1);
+        
         editor.apply();
     }
 
@@ -265,6 +270,12 @@ public class ProgressManager {
 
         Collections.sort(times);
         return times;
+    }
+    
+    // Get completed games count for a difficulty
+    public static int getCompletedGamesCount(Context context, String difficulty) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        return prefs.getInt(difficulty + "_completed_count", 0);
     }
 
     public static class ProgressData {

@@ -62,6 +62,7 @@ public class GameActivity extends AppCompatActivity {
 
         Button deleteButton = findViewById(R.id.delete_button);
         Button pencilToggle = findViewById(R.id.pencil_toggle);
+        Button undoButton = findViewById(R.id.undo_button);
         ImageButton settingsBtn = findViewById(R.id.settings_button);
 
         // Initialize timer
@@ -110,11 +111,13 @@ public class GameActivity extends AppCompatActivity {
                 this.deleteFile(currentDifficulty + "_progress.json");
                 this.deleteFile(currentDifficulty + "_completed.json"); // <-- Add this line
                 boardView.setGrid(pws.puzzle);
+                boardView.clearMoveHistory(); // Clear undo history for new game
                 hintsLeft = 3;
                 hintsUsed = 0;
                 solutionGrid = pws.solution;
             } else {
                 loadProgress();
+                boardView.clearMoveHistory(); // Clear undo history when loading existing game
             }
         }
 
@@ -132,6 +135,7 @@ public class GameActivity extends AppCompatActivity {
         // --- Button Listeners ---
         deleteButton.setOnClickListener(v -> {
             boardView.deleteSelected();
+            checkAndLockCompletedNumbers();
             if (isPuzzleComplete())
                 showCompletionDialog();
         });
@@ -140,6 +144,14 @@ public class GameActivity extends AppCompatActivity {
             boolean isOn = pencilToggle.getText().toString().endsWith("OFF");
             boardView.setPencilmarkMode(isOn);
             pencilToggle.setText("Pencilmark: " + (isOn ? "ON" : "OFF"));
+        });
+
+        undoButton.setOnClickListener(v -> {
+            if (boardView.canUndo()) {
+                boardView.undo();
+                if (isPuzzleComplete())
+                    showCompletionDialog();
+            }
         });
 
         settingsBtn.setOnClickListener(v -> {
@@ -155,25 +167,32 @@ public class GameActivity extends AppCompatActivity {
             final int num = i;
             numBtn.setOnClickListener(v -> {
                 boardView.setNumber(num);
-                SharedPreferences prefs = getSharedPreferences("sudoku_settings", MODE_PRIVATE);
-                boolean autoValidateEnabled = prefs.getBoolean("auto_validate_enabled", true);
-                if (autoValidateEnabled) {
-                    checkAndLockCompletedNumbers();
-                }
+                // Always update auto validation upon entering a puzzle
+                checkAndLockCompletedNumbers();
                 if (isPuzzleComplete())
                     showCompletionDialog();
             });
         }
 
-        // Hide hint button if hints are disabled
+        // Load settings and configure UI
         SharedPreferences prefs = getSharedPreferences("sudoku_settings", MODE_PRIVATE);
         boolean hintsEnabled = prefs.getBoolean("hints_enabled", false);
+        boolean pencilmarkEnabled = prefs.getBoolean("pencilmark_enabled", true);
+        
         Button hintButton = findViewById(R.id.hint_button);
         hintButton.setVisibility(hintsEnabled ? View.VISIBLE : View.GONE);
         hintButton.setEnabled(hintsEnabled);
 
         View hintCirclesLayout = findViewById(R.id.hint_circles_layout);
         hintCirclesLayout.setVisibility(hintsEnabled ? View.VISIBLE : View.GONE);
+        
+        // Configure pencilmark toggle based on settings
+        if (!pencilmarkEnabled) {
+            pencilToggle.setVisibility(View.GONE);
+            boardView.setPencilmarkMode(false);
+        } else {
+            pencilToggle.setVisibility(View.VISIBLE);
+        }
 
         hintButton.setOnClickListener(v -> {
             if (hintsEnabled) {
@@ -190,12 +209,23 @@ public class GameActivity extends AppCompatActivity {
         if (requestCode == SETTINGS_REQUEST) {
             SharedPreferences prefs = getSharedPreferences("sudoku_settings", MODE_PRIVATE);
             boolean hintsEnabled = prefs.getBoolean("hints_enabled", false);
+            boolean pencilmarkEnabled = prefs.getBoolean("pencilmark_enabled", true);
+            
             Button hintButton = findViewById(R.id.hint_button);
             hintButton.setVisibility(hintsEnabled ? View.VISIBLE : View.GONE);
-            hintButton.setEnabled(hintsEnabled); // Add this line
+            hintButton.setEnabled(hintsEnabled);
 
             View hintCirclesLayout = findViewById(R.id.hint_circles_layout);
             hintCirclesLayout.setVisibility(hintsEnabled ? View.VISIBLE : View.GONE);
+            
+            // Update pencilmark toggle visibility
+            Button pencilToggle = findViewById(R.id.pencil_toggle);
+            if (!pencilmarkEnabled) {
+                pencilToggle.setVisibility(View.GONE);
+                boardView.setPencilmarkMode(false);
+            } else {
+                pencilToggle.setVisibility(View.VISIBLE);
+            }
 
             // If user pressed "New Game" in settings, start a new game
             if (resultCode == Activity.RESULT_OK) {
@@ -438,6 +468,9 @@ public class GameActivity extends AppCompatActivity {
                 Button numBtn = findViewById(resId);
                 if (numBtn != null)
                     numBtn.setEnabled(false);
+                
+                // Clear move history when numbers are validated (can't undo validated moves)
+                boardView.clearMoveHistory();
             }
         }
     }
@@ -472,6 +505,9 @@ public class GameActivity extends AppCompatActivity {
         // Save the completion time
         ProgressManager.saveBestTime(this, currentDifficulty, finalTime);
 
+        // Disable all buttons to prevent multiple completions
+        disableAllButtons();
+
         new androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("Congratulations!")
                 .setMessage("You completed the puzzle!")
@@ -482,8 +518,55 @@ public class GameActivity extends AppCompatActivity {
                     finish();
                     startActivity(intent);
                 })
-                .setNegativeButton("Close", (dialog, which) -> dialog.dismiss())
+                .setNegativeButton("Close", (dialog, which) -> {
+                    // Return to main activity
+                    Intent intent = new Intent(GameActivity.this, MainActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    finish();
+                    startActivity(intent);
+                })
                 .show();
+    }
+
+    private void disableAllButtons() {
+        // Disable number buttons
+        for (int i = 1; i <= 9; i++) {
+            int resId = getResources().getIdentifier("num_" + i, "id", getPackageName());
+            Button numBtn = findViewById(resId);
+            if (numBtn != null) {
+                numBtn.setEnabled(false);
+            }
+        }
+        
+        // Disable action buttons
+        Button deleteButton = findViewById(R.id.delete_button);
+        if (deleteButton != null) {
+            deleteButton.setEnabled(false);
+        }
+        
+        Button hintButton = findViewById(R.id.hint_button);
+        if (hintButton != null) {
+            hintButton.setEnabled(false);
+        }
+        
+        Button undoButton = findViewById(R.id.undo_button);
+        if (undoButton != null) {
+            undoButton.setEnabled(false);
+        }
+        
+        Button pencilToggle = findViewById(R.id.pencil_toggle);
+        if (pencilToggle != null) {
+            pencilToggle.setEnabled(false);
+        }
+        
+        // Disable settings button
+        ImageButton settingsBtn = findViewById(R.id.settings_button);
+        if (settingsBtn != null) {
+            settingsBtn.setEnabled(false);
+        }
+        
+        // Disable board interaction
+        boardView.setEnabled(false);
     }
 
     private void updateHintCircles() {
